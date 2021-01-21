@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  slack: circleci/slack@4.2.0
+
 commands:
   destroy-environment:
     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
@@ -34,6 +37,12 @@ commands:
               npm install
               npm run migrations:revert
             fi
+
+  notify-on-fail:
+    description: Send a slack notification to the configured context channel on failed jobs
+    steps:
+      - slack/notify:
+          event: fail
 
 jobs:
   build-frontend:
@@ -93,7 +102,7 @@ jobs:
       - restore_cache:
           keys: [backend-build]
       - run:
-          name: backend tests
+          name: backend test
           command: |
             cd backend
             npm install
@@ -300,6 +309,7 @@ workflows:
       - build-backend
       - test-frontend:
           requires: [build-frontend]
+          context: slack
       - test-backend:
           requires: [build-backend]
       - scan-backend:
