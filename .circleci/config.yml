@@ -110,10 +110,9 @@ jobs:
       - run:
           name: frontend scan
           command: |
-            exit 1
-      # Checkout code from git
-      # Restore from cache
-      # Your job code here
+            cd frontend
+            npm install
+            npm audit --audit-level=critical
 
   scan-backend:
     docker:
@@ -125,16 +124,15 @@ jobs:
       - run:
           name: backend scan
           command: |
-            exit 1
-      # Checkout code from git
-      # Restore from cache
-      # Your job code here
+            cd backend
+            npm install
+            npm audit --audit-level=critical
 
   deploy-infrastructure:
     docker:
       - image: amazon/aws-cli
     steps:
-      # Checkout code from git
+      - checkout
       - run:
           name: Ensure back-end infrastructure exists
           command: |
