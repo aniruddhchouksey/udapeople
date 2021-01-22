@@ -81,6 +81,7 @@ jobs:
           name: frontend tests
           command: |
             cd frontend
+            npm i
             npm run test
 
   test-backend:
