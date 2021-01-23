@@ -37,4 +37,4 @@ Resources:
 Outputs:
   BackendURL:
     Description: host ip for the created instance
-    Value: !GetAtt EC2Instance.PublicDnsName
+    Value: !GetAtt EC2Instance.PublicDnsNamee
