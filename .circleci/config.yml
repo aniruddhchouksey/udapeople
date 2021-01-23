@@ -163,6 +163,7 @@ jobs:
             [web]
             ${BACKEND_URL}
             EOF
+      - run: yum -y install tar gzip
       - persist_to_workspace:
           root: ~/
           paths:
