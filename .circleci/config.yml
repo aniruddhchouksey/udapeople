@@ -159,7 +159,7 @@ jobs:
             export BACKEND_URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" \
               --request GET https://api.memstash.io/values/backendurl)
 
-            cat \<< EOF > ~/project/.circleci/ansible/inventory.txt
+            cat \<< EOF > .circleci/ansible/inventory.txt
             [web]
             ${BACKEND_URL}
             EOF
@@ -186,7 +186,7 @@ jobs:
           name: Install dependencies
           command: |
             cat ~/project/.circleci/ansible/inventory.txt
-            apk add --update ansible
+            apk add --update ansible aws-cli
       - run:
           name: Configure server
           command: |
