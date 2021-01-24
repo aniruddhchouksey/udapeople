@@ -176,13 +176,17 @@ jobs:
     docker:
       - image: python:3.9.1-alpine3.12
     steps:
-      # Checkout code from git
-      # Add ssh keys with fingerprint
-      # attach workspace
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - "a5:67:da:90:31:ed:e4:a2:67:69:2a:69:71:fd:4a:92"
+      - attach_workspace:
+          at: ~/
       - run:
           name: Install dependencies
           command: |
-            # Your code here
+            cat ~/project/.circleci/ansible/inventory.txt
+
             exit 1
       - run:
           name: Configure server

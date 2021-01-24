@@ -1,0 +1,31 @@
+---
+- name: "updating packages."
+  become: yes
+  apt:
+    upgrade: yes
+    update_cache: yes
+
+- name: "installing node"
+  become: yes
+  apt:
+    name: ["nodejs", "npm"]
+    update_cache: yes
+    state: latest
+
+- name: Install nvm to donwgrade nodejs version.
+  become: yes
+  npm:
+    name: n
+    global: yes
+
+- name: downgrade nodejs to v13.8.0
+  become: yes
+  command: n 13.8.0
+
+- name: "installing pm2"
+  become: yes
+  npm:
+    name: pm2
+    global: yes
+    production: yes
+    state: present
