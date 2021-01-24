@@ -142,32 +142,31 @@ jobs:
               --query "Stacks[0].Outputs[?OutputKey=='BackendURL'].OutputValue" \
               --no-paginate --output text)
 
+            echo $BACKEND_URL
             curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" \
               --request PUT --data "${BACKEND_URL}" \
               https://api.memstash.io/values/backendurl
-      - run:
-          name: Ensure front-end infrastructure exist
-          command: |
-            aws cloudformation deploy \
-              --template-file .circleci/files/frontend.yml \
-              --tags project=udapeople-frontend \
-              --stack-name frontend-${CIRCLE_WORKFLOW_ID} \
-              --parameter-overrides ID=${CIRCLE_WORKFLOW_ID}
+      # - run:
+      #     name: Ensure front-end infrastructure exist
+      #     command: |
+      #       aws cloudformation deploy \
+      #         --template-file .circleci/files/frontend.yml \
+      #         --tags project=udapeople-frontend \
+      #         --stack-name frontend-${CIRCLE_WORKFLOW_ID} \
+      #         --parameter-overrides ID=${CIRCLE_WORKFLOW_ID}
       - run:
           name: Add back-end ip to ansible inventory
           command: |
             export BACKEND_URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" \
               --request GET https://api.memstash.io/values/backendurl)
 
-            cat \<< EOF > .circleci/ansible/inventory.txt
-            [web]
-            ${BACKEND_URL}
-            EOF
+            echo $BACKEND_URL >> .circleci/ansible/inventory.txt
+            cat .circleci/ansible/inventory.txt
       - run: yum -y install tar gzip
       - persist_to_workspace:
-          root: .
+          root: .circleci/ansible
           paths:
-            - .circleci/ansible/inventory.txt
+            - inventory.txt
       # This command has a when: on_fail
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID}
@@ -181,12 +180,12 @@ jobs:
           fingerprints:
             - "a5:67:da:90:31:ed:e4:a2:67:69:2a:69:71:fd:4a:92"
       - attach_workspace:
-          at: /tmp/.circleci/ansible/inventory.txt
+          at: /tmp/.circleci/ansible
       - run:
           name: Install dependencies
           command: |
-            cat ~/project/.circleci/ansible/inventory.txt
             apk add --update ansible aws-cli
+            cat /tmp/.circleci/ansible/inventory.txt
       - run:
           name: Configure server
           command: |
