@@ -3,7 +3,7 @@
   become: yes
   copy:
     src: ~/project/backend/dist/
-    dest: /home/ubuntu/dist/
+    dest: /home/ubuntu/dist
 
 - name: installing libcap2-bin
   become: yes
