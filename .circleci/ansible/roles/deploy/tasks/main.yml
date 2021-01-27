@@ -1,0 +1,19 @@
+---
+- name: copy dist backend folder to ec2 server
+  become: yes
+  copy:
+    src: ~/project/backend/dist/
+    dest: /home/ubuntu/dist/
+
+- name: installing libcap2-bin
+  become: yes
+  apt:
+    name: ["libcap2-bin"]
+
+- name: ensure user is able to run the production server
+  become: yes
+  shell:
+    cmd: setcap cap_net_bind_service=+ep $(which node)
+
+- name: start server
+  command: pm2 start /home/ubuntu/dist/main.js
