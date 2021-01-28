@@ -2,8 +2,9 @@
 - name: copy dist backend folder to ec2 server
   become: yes
   copy:
-    src: ~/project/backend/dist/
+    src: ~/project/backend/dist
     dest: /home/ubuntu/dist
+    remote_src: yes
 
 - name: installing libcap2-bin
   become: yes
