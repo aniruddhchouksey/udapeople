@@ -25,12 +25,14 @@ commands:
       workflow_id:
         type: string
     steps:
+      - restore_cache:
+          keys:
+            - backend-url
       - run:
           name: Revert migrations
           when: on_fail
           command: |
-            status=$(curl -H "token: <<parameters.workflow_id>>" \
-              --request GET https://api.memstash.io/values/migration-<<parameters.workflow_id>>)
+            status=$(cat backend.txt)
             echo $status
             if [[ "${status}" == 1 ]]; then
               npm run migrations:revert
@@ -163,10 +165,14 @@ jobs:
               --query "Stacks[0].Outputs[?OutputKey=='BackendURL'].OutputValue" \
               --no-paginate --output text)
 
-            echo $BACKEND_URL
-            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" \
-              --request PUT --data "${BACKEND_URL}" \
-              https://api.memstash.io/values/backendurl
+            echo $BACKEND_URL > backend.txt
+      - save_cache:
+          key: backend-url
+          paths:
+            - backend.txt
+            # curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" \
+            #   --request PUT --data "${BACKEND_URL}" \
+            #   https://api.memstash.io/values/backendurl
       - run:
           name: Ensure front-end infrastructure exist
           command: |
@@ -175,12 +181,13 @@ jobs:
               --tags project=udapeople-frontend \
               --stack-name frontend-"${CIRCLE_WORKFLOW_ID}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}"
+      - restore_cache:
+          keys:
+            - backend-url
       - run:
           name: Add back-end ip to ansible inventory
           command: |
-            export BACKEND_URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" \
-              --request GET https://api.memstash.io/values/backendurl)
-
+            export BACKEND_URL=$(cat backend.txt)
             echo "${BACKEND_URL}" >> .circleci/ansible/inventory.txt
             cat .circleci/ansible/inventory.txt
       - run: yum -y install tar gzip
@@ -257,9 +264,9 @@ jobs:
             fi
 
             if cat migration-log.txt | grep "has been executed successfully"; then
-              curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" \
-                --request PUT --data "1" \
-                https://api.memstash.io/values/migration-"${CIRCLE_WORKFLOW_ID}"
+              # curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" \
+              #   --request PUT --data "1" \
+              #   https://api.memstash.io/values/migration-"${CIRCLE_WORKFLOW_ID}"
             fi
       - persist_to_workspace:
           root: ~/project
@@ -286,11 +293,13 @@ jobs:
             curl -sL https://rpm.nodesource.com/setup_13.x | sudo bash -
             yum install -y nodejs
             node --version
+      - restore_cache:
+          keys:
+            - backend-url
       - run:
           name: Get backend url
           command: |
-            export API_URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" \
-              --request GET https://api.memstash.io/values/backendurl)
+            export API_URL=$(cat backend.txt)
             export API_URL="http://${API_URL}:3030"
             echo "${API_URL}" > .circleci/api_url.txt
       - run:
@@ -350,8 +359,7 @@ jobs:
       - run:
           name: Get backend url
           command: |
-            curl -H "token: ${CIRCLE_WORKFLOW_ID}" \
-              --request GET https://api.memstash.io/values/backendurl \
+            cat backend.txt
               > backend-url.txt
       - run:
           name: Backend smoke test.
@@ -390,15 +398,20 @@ jobs:
             echo "${STACKS[@]}"
 
             # save oldworkflowid for the cleanup phase
-            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" \
-              --request PUT --data "${OldWorkflowID}" \
-                https://api.memstash.io/values/oldworkflowid
+            echo ${OldWorkflowID} > oldworkflowid.txt
+            # curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" \
+            #   --request PUT --data "${OldWorkflowID}" \
+            #     https://api.memstash.io/values/oldworkflowid
 
             # promote
             aws cloudformation update-stack \
               --use-previous-template \
               --stack-name cloudfront-${OldWorkflowID} \
               --parameters ParameterKey=WorkflowID,ParameterValue=$CIRCLE_WORKFLOW_ID,UsePreviousValue=false
+      - save_cache:
+          key: oldworkflowid
+          paths:
+            - oldworkflowid.txt
       # Here's where you will add some code to rollback on failure
       - destroy-environment:
           workflow_id: "${CIRCLE_WORKFLOW_ID}"
@@ -408,11 +421,13 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - oldworkflowid
       - run:
           name: Remove old stacks and files
           command: |
-            export OldWorkflowID=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" \
-             --request GET https://api.memstash.io/values/oldworkflowid)
+            export OldWorkflowID=$(cat oldworkflowid.txt)
 
             if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
             then
