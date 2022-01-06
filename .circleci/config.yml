@@ -417,7 +417,7 @@ jobs:
             # promote
             aws cloudformation update-stack \
               --use-previous-template \
-              --stack-name cloudfront-${OldWorkflowID} \
+              --stack-name InitialStack \
               --parameters ParameterKey=WorkflowID,ParameterValue=$CIRCLE_WORKFLOW_ID,UsePreviousValue=false
       - save_cache:
           key: oldworkflowid
