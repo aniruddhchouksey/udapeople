@@ -187,7 +187,10 @@ jobs:
       - run:
           name: Add back-end ip to ansible inventory
           command: |
-            export BACKEND_URL=$(cat backend.txt)
+            export BACKEND_URL=$(aws cloudformation describe-stacks \
+              --stack-name backend-"${CIRCLE_WORKFLOW_ID}" \
+              --query "Stacks[0].Outputs[?OutputKey=='BackendURL'].OutputValue" \
+              --no-paginate --output text)
             echo "${BACKEND_URL}" >> .circleci/ansible/inventory.txt
             cat .circleci/ansible/inventory.txt
       - run: yum -y install tar gzip
@@ -300,7 +303,10 @@ jobs:
       - run:
           name: Get backend url
           command: |
-            export API_URL=$(cat backend.txt)
+            export API_URL=$(aws cloudformation describe-stacks \
+              --stack-name backend-"${CIRCLE_WORKFLOW_ID}" \
+              --query "Stacks[0].Outputs[?OutputKey=='BackendURL'].OutputValue" \
+              --no-paginate --output text)
             export API_URL="http://${API_URL}:3030"
             echo "${API_URL}" > .circleci/api_url.txt
       - run:
@@ -358,15 +364,18 @@ jobs:
             sudo apt update
             sudo apt install -y awscli
             sudo apt install -y python3 ansible
-      - run:
-          name: Get backend url
-          command: |
-            cat backend.txt
-              > backend-url.txt
+      # - run:
+      #     name: Get backend url
+      #     command: |
+      #       cat backend.txt
+      #         > backend-url.txt
       - run:
           name: Backend smoke test.
           command: |
-            url=$(cat backend-url.txt)
+            url=$(aws cloudformation describe-stacks \
+              --stack-name backend-"${CIRCLE_WORKFLOW_ID}" \
+              --query "Stacks[0].Outputs[?OutputKey=='BackendURL'].OutputValue" \
+              --no-paginate --output text)
             url="http://${url}:3030/api/status"
             curl $url
       - run:
